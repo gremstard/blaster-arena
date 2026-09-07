@@ -63,6 +63,26 @@ The `assets/` folder (kept out of git, copy it from the `shooter/assets` folder)
 
 ## Character models
 
+## Animations
+
+Both operators are animated with Quaternius' Universal Animation Library (CC0), which
+ships in `assets/animations/UAL1_Standard.glb`. Godot retargets it through humanoid bone
+maps written into the `.import` settings of the library and both models by
+`tools/setup_bone_maps.gd`. Run that script and then a reimport whenever a model is
+replaced:
+
+```bash
+/Applications/Godot.app/Contents/MacOS/Godot --headless --path . --script tools/setup_bone_maps.gd
+/Applications/Godot.app/Contents/MacOS/Godot --headless --path . --import
+```
+
+`scripts/operator_animator.gd` copies the library clips onto each model's skeleton and
+picks Idle, Walk, Jog, Sprint, Jump or Death from the player's synced speed, grounded
+state and life. The held weapon is parented to the right hand bone. New rigs need a
+mapping added to the setup script (Mixamo and Unreal-style names are covered).
+
+## Operators
+
 Operators are defined in `scripts/game.gd` under `CLASSES`: stats (`max_health`, `speed`),
 a model file, scale, yaw, an optional texture folder with a material-name to file-prefix map,
 and mesh names to hide (for example a gun baked into the character). The model is tinted by
@@ -115,8 +135,9 @@ one zone, at least one spawn of each side, and some loot spots. Saved maps live 
 /Applications/Godot.app/Contents/MacOS/Godot --path . -- --join=127.0.0.1 --name=Guest --class="Insurgent 2"
 ```
 
-`--fast` shortens phases (6 s setup, 30 s siege). Other flags: `--team=1|2` forces a side
-preference, `--autostart=N` starts the match after N seconds, `--test-loot --weapon=N` hands
+`--fast` shortens phases (6 s setup, 30 s siege). Other flags: `--port=N` uses another
+port (handy when a Blaster Arena host already holds 7777), `--team=1|2` forces a side
+preference, `--test-walk=SECONDS` strafes for four seconds starting then, `--autostart=N` starts the match after N seconds, `--test-loot --weapon=N` hands
 you every gun and selects one, `--dump-viewmodel` prints the first-person weapon subtree,
 `--test-zone` puts you in the zone when the siege starts,
 `--test-hit` kills the host every 4 s, `--screenshot=PATH`, `--screenshot-delay=N`,
