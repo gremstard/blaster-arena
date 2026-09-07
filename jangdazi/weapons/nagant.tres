@@ -8,7 +8,7 @@
 script = ExtResource("3_script")
 model = ExtResource("2_model")
 rotation = Vector3(0, 90, 0)
-position = Vector3(-0.3, 0.45, 0.2)
+position = Vector3(-0.35, 0.7, 0.5)
 model_scale = 0.024
 view_scale = 4.0
 texture_dir = "res://assets/nagant-m1895-revolver/textures"
