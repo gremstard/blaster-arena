@@ -15,4 +15,5 @@
 build/
 data_*/
 export.cfg
+jangdazi/
 mono_crash.*.json
