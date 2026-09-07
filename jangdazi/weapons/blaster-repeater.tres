@@ -2,14 +2,17 @@
 
 [ext_resource type="Script" uid="uid://dg01pkkc1c5vd" path="res://scripts/weapon.gd" id="1_l1atd"]
 [ext_resource type="Texture2D" uid="uid://ce3lgq7foiusl" path="res://sprites/crosshair-repeater.png" id="1_hoqei"]
-[ext_resource type="PackedScene" uid="uid://dd3oln1ucgqpd" path="res://models/blaster-repeater.glb" id="2_h64nv"]
+[ext_resource type="PackedScene" path="res://assets/ak-105/source/ak105spraypainted.fbx" id="2_h64nv"]
 
 [resource]
 script = ExtResource("1_l1atd")
 model = ExtResource("2_h64nv")
-rotation = Vector3(0, 180, 0)
+rotation = Vector3(0, 0, 0)
 muzzle_position = Vector3(0.1, -0.4, 1.5)
-display_name = "Repeater"
+display_name = "AK-105"
+model_scale = 0.22
+texture_dir = "res://assets/ak-105/textures"
+position = Vector3(-0.35, 0.55, 0.1)
 mode_name = "Auto"
 cooldown = 0.1
 damage = 9.0

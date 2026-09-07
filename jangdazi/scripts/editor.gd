@@ -140,7 +140,7 @@ func _make_ghost() -> void:
 			m.transparency = 0.55
 	else:
 		var size: Vector3 = info.box if info.has("box") else info.size
-		var tint: Color = info.color if info.has("color") else info.marker
+		var tint: Color = info.get("color", info.get("marker", Color(0.7, 0.7, 0.7)))
 		ghost = MeshInstance3D.new()
 		var box := BoxMesh.new()
 		box.size = size

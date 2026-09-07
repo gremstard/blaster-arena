@@ -4,7 +4,7 @@ extends Node3D
 const PLAYER_SCENE := preload("res://objects/player.tscn")
 const LOOT_SCENE := preload("res://objects/loot.tscn")
 const WARMUP_RESPAWN := 3.0
-const DROP_HEIGHT := 45.0
+const DROP_HEIGHT := 120.0
 const RING_DAMAGE := 6
 const RING_DAMAGE_INTERVAL := 1.0
 
@@ -440,6 +440,13 @@ func _handle_cmdline() -> void:
 				if me:
 					me.position = level.zone_center + Vector3(0, 1, 0)
 					me.dropping = false)
+	if args.has("test-loot"): # debug: own every weapon, select --weapon=N
+		get_tree().create_timer(2.0).timeout.connect(func():
+			var me: Player = players_root.get_node_or_null(str(multiplayer.get_unique_id()))
+			if me:
+				for i in me.weapons.size():
+					me.give_loot("weapon:%d" % i)
+				me.initiate_change_weapon(int(args.get("weapon", "1"))))
 	if args.has("autostart"):
 		get_tree().create_timer(float(args.get("autostart", "5")) if args["autostart"] != "" else 5.0).timeout.connect(start_match)
 	if args.has("test-hit"):

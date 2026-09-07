@@ -1,7 +1,7 @@
 [gd_resource type="Resource" script_class="Weapon" load_steps=4 format=3]
 
 [ext_resource type="Texture2D" uid="uid://2jld33y6h5pq" path="res://sprites/crosshair.png" id="1_cross"]
-[ext_resource type="PackedScene" uid="uid://dd3oln1ucgqpd" path="res://models/blaster-repeater.glb" id="2_model"]
+[ext_resource type="PackedScene" path="res://assets/classic-m4/source/Classic M4.fbx" id="2_model"]
 [ext_resource type="Script" uid="uid://dg01pkkc1c5vd" path="res://scripts/weapon.gd" id="3_script"]
 
 [resource]
@@ -9,8 +9,10 @@ script = ExtResource("3_script")
 model = ExtResource("2_model")
 rotation = Vector3(0, 180, 0)
 muzzle_position = Vector3(0.1, -0.4, 1.5)
-tint = Color(0.55, 0.65, 1, 1)
-display_name = "Marksman"
+display_name = "M4 Marksman"
+model_scale = 2.6
+texture_dir = "res://assets/classic-m4/textures"
+position = Vector3(-0.35, 0.55, 0.1)
 mode_name = "Snap"
 cooldown = 0.9
 max_distance = 120

@@ -20,7 +20,7 @@ const BASE_FOV := 80.0
 const POWERUP_SECONDS := 15.0
 const SPEED_MULT := 1.5
 const DAMAGE_MULT := 1.75
-const DROP_FALL_SPEED := 5.0 # terminal velocity while dropping in
+const DROP_FALL_SPEED := 12.0 # terminal velocity while dropping in
 const DROP_AIR_SPEED := 9.0
 
 enum Pickup { HEALTH, SHIELD, SPEED, DAMAGE }
@@ -592,11 +592,10 @@ func change_weapon() -> void:
 	for n in container.get_children():
 		container.remove_child(n)
 		n.queue_free()
-	var weapon_model: Node3D = weapon.model.instantiate()
+	var weapon_model: Node3D = weapon.build_model()
 	container.add_child(weapon_model)
 	weapon_model.position = weapon.position
 	weapon_model.rotation_degrees = weapon.rotation
-	_tint_model(weapon_model, weapon.tint)
 	for child in weapon_model.find_children("*", "MeshInstance3D"):
 		child.layers = 2
 	raycast.target_position = Vector3(0, 0, -1) * weapon.max_distance
@@ -612,22 +611,11 @@ func _update_hand_weapon() -> void:
 	for n in hand.get_children():
 		if n != hand_muzzle:
 			n.queue_free()
-	var model: Node3D = weapon.model.instantiate()
+	var model: Node3D = weapon.build_model()
 	hand.add_child(model)
 	model.rotation_degrees = weapon.rotation
-	model.scale = Vector3.ONE * HAND_WEAPON_SCALE
-	_tint_model(model, weapon.tint)
+	model.scale *= HAND_WEAPON_SCALE
 
-
-static func _tint_model(model: Node3D, tint: Color) -> void:
-	if tint == Color.WHITE:
-		return
-	for child in model.find_children("*", "MeshInstance3D"):
-		for i in child.get_surface_override_material_count():
-			var base: Material = child.mesh.surface_get_material(i) if child.mesh else null
-			var mat: StandardMaterial3D = base.duplicate() if base is StandardMaterial3D else StandardMaterial3D.new()
-			mat.albedo_color = mat.albedo_color * tint
-			child.set_surface_override_material(i, mat)
 
 
 static func random_vec2(_min: Vector2, _max: Vector2) -> Vector2:

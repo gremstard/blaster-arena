@@ -9,6 +9,7 @@ const DEFAULT_MAP := "res://maps/city.json"
 const GRID := 0.5
 
 const PIECES := {
+	"city": {"label": "City (FBX)", "asset": "res://assets/City Map/City.fbx", "size": Vector3(400, 100, 400)},
 	"building_small": {"label": "Building small", "box": Vector3(6, 6, 6), "color": Color(0.62, 0.6, 0.58)},
 	"building_mid": {"label": "Building mid", "box": Vector3(8, 10, 8), "color": Color(0.55, 0.57, 0.6)},
 	"building_tall": {"label": "Building tall", "box": Vector3(8, 16, 8), "color": Color(0.45, 0.47, 0.52)},
@@ -93,7 +94,9 @@ func _instance(src: Dictionary) -> Node3D:
 	data.pieces.append(piece)
 
 	var node: Node3D
-	if info.has("scene"):
+	if info.has("asset"):
+		node = _asset_piece(type, info)
+	elif info.has("scene"):
 		if not _scene_cache.has(type):
 			_scene_cache[type] = load(info.scene)
 		node = _scene_cache[type].instantiate()
@@ -116,6 +119,33 @@ func _instance(src: Dictionary) -> Node3D:
 	node.position = pos
 	node.rotation_degrees.y = piece.r
 	return node
+
+
+# Big imported model: instanced with trimesh collision and re-centered on its footprint
+func _asset_piece(type: String, info: Dictionary) -> Node3D:
+	var holder := Node3D.new()
+	if not ResourceLoader.exists(info.asset):
+		push_warning("Asset missing: " + info.asset)
+		return holder
+	if not _scene_cache.has(type):
+		_scene_cache[type] = load(info.asset)
+	var model: Node3D = _scene_cache[type].instantiate()
+	holder.add_child(model)
+	var aabb := AABB()
+	var first := true
+	for m in model.find_children("*", "MeshInstance3D"):
+		m.create_trimesh_collision()
+		var a: AABB = m.transform * m.get_aabb()
+		var p := m.get_parent()
+		while p and p != model:
+			a = p.transform * a
+			p = p.get_parent()
+		aabb = a if first else aabb.merge(a)
+		first = false
+	if not first:
+		var c := aabb.get_center()
+		model.position = Vector3(-c.x, -aabb.position.y, -c.z)
+	return holder
 
 
 func _box(size: Vector3, color: Color) -> StaticBody3D:

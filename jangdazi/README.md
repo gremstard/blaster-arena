@@ -39,6 +39,25 @@ and Kenney's CC0 Starter Kit FPS.
 3. Everyone warms up in the plaza. The host presses Esc and clicks **START MATCH**.
 4. Players who join mid-round spectate until the next round.
 
+## Assets in use
+
+The `assets/` folder (kept out of git, copy it from the `shooter/assets` folder) provides:
+
+- **City Map/City.fbx**: the playable city, about 400 m square with 100 m towers. The
+  `city` map piece loads it with trimesh collision and centers it on the map origin.
+  `tools/gen_city_map.gd` raycasts down through the model to find street-level points and
+  writes `maps/city.json` with the zone, spawns and loot spots placed on streets. Rerun it
+  after replacing the model:
+
+  ```bash
+  /Applications/Godot.app/Contents/MacOS/Godot --headless --path . --script tools/gen_city_map.gd
+  ```
+
+- **ak-105** and **classic-m4**: weapon models used for the AK-105 (auto/burst) and the
+  M4 Marksman (snap/scope). Textures are applied by material name from each `textures/`
+  folder through `Weapon.build_model`, so a new gun only needs a `.tres` pointing at its
+  FBX, a `model_scale`, and a `texture_dir`.
+
 ## Character models from Fab
 
 The character packs are Unreal-format, so Fab only offers "Add to library". To use them:
