@@ -4,7 +4,7 @@
 [ext_resource type="Resource" uid="uid://cu2gtxlcmbb34" path="res://weapons/blaster-repeater.tres" id="2_6epbw"]
 [ext_resource type="Texture2D" uid="uid://8ggihh27mlrr" path="res://sprites/blob_shadow.png" id="2_b0fo8"]
 [ext_resource type="Script" uid="uid://dg01pkkc1c5vd" path="res://scripts/weapon.gd" id="2_i825w"]
-[ext_resource type="Resource" uid="uid://c56y8pqoyk15f" path="res://weapons/blaster.tres" id="3_kr4p8"]
+[ext_resource type="Resource" path="res://weapons/ak47.tres" id="3_kr4p8"]
 [ext_resource type="SpriteFrames" uid="uid://dbv3sy5qjatnl" path="res://sprites/burst_animation.tres" id="4_m6ukc"]
 [ext_resource type="AudioStream" uid="uid://cydjn1ct3hps2" path="res://sounds/walking.ogg" id="5_ics1s"]
 [ext_resource type="Resource" path="res://weapons/marksman.tres" id="7_marks"]
@@ -12,12 +12,12 @@
 [ext_resource type="FontFile" uid="uid://biqtga8moh7ah" path="res://fonts/lilita_one_regular.ttf" id="6_font"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_gdq8c"]
-radius = 0.3
-height = 1.0
+radius = 0.35
+height = 1.75
 
 [sub_resource type="CapsuleMesh" id="CapsuleMesh_body"]
-radius = 0.3
-height = 1.0
+radius = 0.35
+height = 1.75
 
 [sub_resource type="SphereMesh" id="SphereMesh_aura"]
 radius = 0.55
@@ -45,11 +45,11 @@ script = ExtResource("1_ffboj")
 weapons = Array[ExtResource("2_i825w")]([ExtResource("8_pistol"), ExtResource("2_6epbw"), ExtResource("3_kr4p8"), ExtResource("7_marks")])
 
 [node name="Collider" type="CollisionShape3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.55, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
 shape = SubResource("CapsuleShape3D_gdq8c")
 
 [node name="Head" type="Node3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
 
 [node name="Camera" type="Camera3D" parent="Head"]
 cull_mask = 1048573
@@ -91,7 +91,7 @@ collide_with_areas = true
 
 [node name="Shadow" type="Decal" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.9, 0)
-size = Vector3(1, 2, 1)
+size = Vector3(1.4, 2, 1.4)
 texture_albedo = ExtResource("2_b0fo8")
 modulate = Color(1, 1, 1, 0.705882)
 normal_fade = 0.5
@@ -110,18 +110,18 @@ replication_config = SubResource("SceneReplicationConfig_sync")
 [node name="Body" type="Node3D" parent="."]
 
 [node name="Mesh" type="MeshInstance3D" parent="Body"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.55, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
 mesh = SubResource("CapsuleMesh_body")
 
 [node name="Aura" type="MeshInstance3D" parent="Body"]
-transform = Transform3D(1, 0, 0, 0, 1.4, 0, 0, 0, 1, 0, 0.55, 0)
+transform = Transform3D(1.4, 0, 0, 0, 2.2, 0, 0, 0, 1.4, 0, 0.9, 0)
 mesh = SubResource("SphereMesh_aura")
 cast_shadow = 0
 
 [node name="Model" type="Node3D" parent="Body"]
 
 [node name="Hand" type="Node3D" parent="Body"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.35, 0.8, -0.1)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.3, 1.25, -0.25)
 
 [node name="Muzzle" type="AnimatedSprite3D" parent="Body/Hand"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.15, -0.5)
@@ -129,7 +129,7 @@ sprite_frames = ExtResource("4_m6ukc")
 frame = 2
 
 [node name="NameLabel" type="Label3D" parent="Body"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.15, 0)
 pixel_size = 0.004
 billboard = 1
 no_depth_test = true

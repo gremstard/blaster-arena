@@ -53,32 +53,38 @@ The `assets/` folder (kept out of git, copy it from the `shooter/assets` folder)
   /Applications/Godot.app/Contents/MacOS/Godot --headless --path . --script tools/gen_city_map.gd
   ```
 
-- **ak-105** and **classic-m4**: weapon models used for the AK-105 (auto/burst) and the
-  M4 Marksman (snap/scope). Textures are applied by material name from each `textures/`
+- **ak-105**, **ak47fbx** and **classic-m4**: weapon models for the AK-105 (auto/burst),
+  AK-47 (auto/semi) and the M4 Marksman (snap/scope). Textures are applied by material name from each `textures/`
   folder through `Weapon.build_model`, so a new gun only needs a `.tres` pointing at its
   FBX, a `model_scale`, and a `texture_dir`.
 
-## Character models from Fab
+## Character models
 
-The character packs are Unreal-format, so Fab only offers "Add to library". To use them:
+Classes are defined in `scripts/game.gd` under `CLASSES`. Each entry names a model file,
+a scale, a yaw, an optional texture folder with a material-name to file-prefix map, and mesh
+names to hide (for example a gun baked into the character). If the model file is missing
+the class falls back to a colored capsule, so the game always runs.
 
-1. Install Unreal Engine from the Epic Games Launcher and create a blank project.
-2. In the launcher's Fab library, add each pack to that project.
-3. In Unreal's Content Browser, right-click the skeletal mesh (and its animations if you
-   want them), choose **Asset Actions > Export**, and save as FBX. Include textures.
-4. Copy the FBX files into `assets/characters/` with these names:
+Currently wired:
 
-| Operator | File |
-| --- | --- |
-| FSB Operator | `fsb_operator.glb` (or convert the FBX to glTF in Blender) |
-| Free Modular | `free_modular.glb` |
-| Insurgent 2 | `insurgent_2.glb` |
-| Insurgent 7 | `insurgent_7.glb` |
+| Operator | Source | Notes |
+| --- | --- | --- |
+| FSB Operator | `assets/fsb-operator/fsb.glb` | Converted from the Sketchfab `.blend` with `tools/blend2glb.py`; textures mapped from `textures/`; baked-in Krinkov hidden |
+| Free Modular | `assets/FBX/SKM_Character.fbx` | The modular sample pack; shipped without textures, so it renders flat white |
+| Insurgent 2 / 7 | `assets/characters/insurgent_2.glb`, `insurgent_7.glb` | Not yet available; capsules until the Fab packs are exported |
 
-The paths are in `scripts/game.gd` under `CLASSES`. If you keep FBX, change the extension
-there. The game checks whether the file exists and falls back to a colored capsule if not,
-so nothing else changes. Animations are not yet driven; that is the next step once the
-models are in.
+To convert a `.blend` (Blender is installed at `/Applications/Blender.app`):
+
+```bash
+/Applications/Blender.app/Contents/MacOS/Blender -b path/to/model.blend --python tools/blend2glb.py -- "$PWD/assets/<pack>/model.glb"
+```
+
+Put a `.gdignore` file in any folder holding the original `.blend` so Godot does not try to
+import it. Textures that the blend referenced from the author's disk are not embedded; map
+them by material name in the class entry instead.
+
+For Unreal-only Fab packs: add them to a blank Unreal project, right-click the skeletal
+mesh, **Asset Actions > Export** as FBX, and point the class entry at the file.
 
 ## Map editor
 

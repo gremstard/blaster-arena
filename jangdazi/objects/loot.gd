@@ -5,7 +5,7 @@ class_name LootCrate
 
 const ITEMS := { # item -> weight
 	"weapon:1": 3, # Repeater
-	"weapon:2": 3, # Blaster
+	"weapon:2": 3, # AK-47
 	"weapon:3": 2, # Marksman
 	"shield": 3,
 	"health": 2,

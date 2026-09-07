@@ -6,16 +6,16 @@ class_name Player
 # capsule placeholder) with the current weapon in hand.
 
 @export_subgroup("Properties")
-@export var movement_speed := 5.5
+@export var movement_speed := 6.5
 @export_range(0, 100) var number_of_jumps: int = 2
-@export var jump_strength := 8.0
+@export var jump_strength := 9.0
 
 @export_subgroup("Weapons")
 @export var weapons: Array[Weapon] = [] # index 0 is the starting pistol
 
 const MAX_HEALTH := 100
 const MAX_OVERSHIELD := 150
-const HAND_WEAPON_SCALE := 0.45
+const HAND_WEAPON_SCALE := 0.9
 const BASE_FOV := 80.0
 const POWERUP_SECONDS := 15.0
 const SPEED_MULT := 1.5
@@ -156,18 +156,38 @@ func _refresh_identity() -> void:
 		_load_class_model(cls)
 
 
-# Uses a real character model if one has been dropped into assets/characters
+# Uses a real character model when the class defines one that exists on disk
 func _load_class_model(cls: String) -> void:
 	for c in model_holder.get_children():
 		c.queue_free()
-	var path: String = Game.CLASSES[cls].model
+	var info: Dictionary = Game.CLASSES[cls]
+	var path: String = info.model
 	var has_model := ResourceLoader.exists(path)
 	body_mesh.visible = not has_model
-	if has_model:
-		var scene: PackedScene = load(path)
-		if scene:
-			var inst := scene.instantiate()
-			model_holder.add_child(inst)
+	if not has_model:
+		return
+	var scene: PackedScene = load(path)
+	if scene == null:
+		body_mesh.visible = true
+		return
+	var inst: Node3D = scene.instantiate()
+	inst.scale = Vector3.ONE * float(info.get("scale", 1.0))
+	inst.rotation_degrees.y = float(info.get("yaw", 0.0))
+	for hidden in info.get("hide", []):
+		var n := inst.find_child(hidden, true, false)
+		if n:
+			n.visible = false
+	if not String(info.get("textures", "")).is_empty():
+		ModelTextures.apply(inst, info.textures, info.get("map", {}))
+	model_holder.add_child(inst)
+	# Loop the first animation as an idle
+	for ap in inst.find_children("*", "AnimationPlayer"):
+		var list: PackedStringArray = ap.get_animation_list()
+		if list.size() > 0:
+			var anim: Animation = ap.get_animation(list[0])
+			anim.loop_mode = Animation.LOOP_LINEAR
+			ap.play(list[0])
+			break
 
 
 func has_effect(type: Pickup) -> bool:

@@ -459,13 +459,21 @@ func _handle_cmdline() -> void:
 			var host: Player = players_root.get_node_or_null("1")
 			if me and host and not host.dead:
 				me._request_damage(host, 500, me.peer_id()))
-	if args.has("test-look"):
-		get_tree().create_timer(2.5).timeout.connect(func():
+	if args.has("test-look"): # debug: keep facing the nearest other player (clients also teleport next to them)
+		var t := Timer.new()
+		t.wait_time = 1.0
+		t.autostart = true
+		add_child(t)
+		t.timeout.connect(func():
 			var me: Player = players_root.get_node_or_null(str(multiplayer.get_unique_id()))
-			var host: Player = players_root.get_node_or_null("1")
-			if me and host:
-				me.position = host.sync_position + Vector3(1.8, 0.2, 1.8)
-				me.face_toward(host.sync_position + Vector3(0, 0.8, 0)))
+			if me == null:
+				return
+			for other in players_root.get_children():
+				if other is Player and other != me:
+					if not multiplayer.is_server() and me.position.distance_to(other.sync_position) > 4.0:
+						me.position = other.sync_position + Vector3(2.2, 0.2, 2.2)
+					me.face_toward(other.sync_position + Vector3(0, 1.2, 0))
+					break)
 	if args.has("screenshot"):
 		get_tree().create_timer(float(args.get("screenshot-delay", "3.0")), true).timeout.connect(func():
 			get_viewport().get_texture().get_image().save_png(args["screenshot"])

@@ -11,12 +11,24 @@ const TEAM_ATT := 1
 const TEAM_NAMES := ["Defenders", "Attackers"]
 const TEAM_COLORS := [Color(0.35, 0.6, 1.0), Color(1.0, 0.45, 0.3)]
 
-# Character classes. Drop a .glb/.fbx at "model" to replace the placeholder capsule.
+# Character classes. "model" is loaded if the file exists, otherwise a colored capsule is shown.
+# "textures" + "map" apply PBR textures by material name; "hide" lists mesh names to drop
+# (e.g. a gun baked into the character); "scale" fits the model to ~1.75 m.
 const CLASSES := {
-	"FSB Operator": {"team": TEAM_DEF, "color": Color(0.3, 0.5, 0.9), "model": "res://assets/characters/fsb_operator.glb"},
-	"Free Modular": {"team": TEAM_DEF, "color": Color(0.45, 0.7, 0.95), "model": "res://assets/characters/free_modular.glb"},
-	"Insurgent 2": {"team": TEAM_ATT, "color": Color(0.9, 0.4, 0.25), "model": "res://assets/characters/insurgent_2.glb"},
-	"Insurgent 7": {"team": TEAM_ATT, "color": Color(0.85, 0.3, 0.45), "model": "res://assets/characters/insurgent_7.glb"},
+	"FSB Operator": {"team": TEAM_DEF, "color": Color(0.3, 0.5, 0.9),
+		"model": "res://assets/fsb-operator/fsb.glb", "scale": 1.15, "yaw": 180.0,
+		"textures": "res://assets/fsb-operator/textures",
+		"map": {"uniform": "scp_operator_uniform", "helmet": "scp_operator_helmet", "mask": "scp_operator_mask",
+			"gloves": "scp_operator_glove", "night vis goggles": "scp_operator_goggles", "pouch.002": "scp_operator_pouch",
+			"boots": "boot", "face": "swat_face", "eyes": "254264-brown-eye", "fsb patch": "fsb_patch",
+			"Krinkov": "krinkov_sketchfab_krinkov", "Magazine": "krinkov_sketchfab_magazine"},
+		"hide": ["Gun", "Magazine", "Magazine_001", "Magazine_002", "Magazine_003", "Magazine_004", "Stock", "Plane", "Plane_001"]},
+	"Free Modular": {"team": TEAM_DEF, "color": Color(0.45, 0.7, 0.95),
+		"model": "res://assets/FBX/SKM_Character.fbx", "scale": 0.95, "yaw": 180.0, "textures": "", "map": {}, "hide": []},
+	"Insurgent 2": {"team": TEAM_ATT, "color": Color(0.9, 0.4, 0.25),
+		"model": "res://assets/characters/insurgent_2.glb", "scale": 1.0, "yaw": 180.0, "textures": "", "map": {}, "hide": []},
+	"Insurgent 7": {"team": TEAM_ATT, "color": Color(0.85, 0.3, 0.45),
+		"model": "res://assets/characters/insurgent_7.glb", "scale": 1.0, "yaw": 180.0, "textures": "", "map": {}, "hide": []},
 }
 const PRESET_NAMES := ["Ace", "Blaze", "Comet", "Dash", "Echo", "Frost", "Ghost", "Havoc", "Ion", "Jinx",
 	"Karma", "Lynx", "Maverick", "Nova", "Onyx", "Pixel", "Quake", "Rogue", "Spark", "Titan", "Vortex", "Zed"]
