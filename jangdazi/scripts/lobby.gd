@@ -11,6 +11,7 @@ var name_select: OptionButton
 var name_edit: LineEdit
 var class_select: OptionButton
 var class_hint: Label
+var pref_select: OptionButton
 var map_select: OptionButton
 var ip_edit: LineEdit
 var host_button: Button
@@ -74,27 +75,43 @@ func _build() -> void:
 	name_edit.text_changed.connect(func(_t): _remember())
 	name_row.add_child(name_edit)
 
-	vb.add_child(_caption("Operator"))
+	var pick_row := HBoxContainer.new()
+	vb.add_child(pick_row)
+	var op_box := VBoxContainer.new()
+	op_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	pick_row.add_child(op_box)
+	op_box.add_child(_caption("Operator"))
 	class_select = OptionButton.new()
 	var idx := 0
 	for cls in Game.CLASSES:
 		var info: Dictionary = Game.CLASSES[cls]
-		class_select.add_item("%s  (%s)" % [cls, Game.TEAM_NAMES[info.team]])
+		class_select.add_item("%s  -  %s" % [cls, info.desc])
 		class_select.set_item_metadata(idx, cls)
-		var swatch := GradientTexture2D.new()
-		swatch.width = 18
-		swatch.height = 18
-		var g := Gradient.new()
-		g.set_color(0, info.color)
-		g.set_color(1, info.color)
-		swatch.gradient = g
-		class_select.set_item_icon(idx, swatch)
 		if cls == Game.local_class:
 			class_select.select(idx)
 		idx += 1
 	class_select.item_selected.connect(func(_i): _remember())
-	vb.add_child(class_select)
-	class_hint = _caption("Your operator sets your preferred side. The host balances teams if needed.")
+	op_box.add_child(class_select)
+	var side_box := VBoxContainer.new()
+	side_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	pick_row.add_child(side_box)
+	side_box.add_child(_caption("Side"))
+	pref_select = OptionButton.new()
+	for i in Game.TEAM_PREFS.size():
+		pref_select.add_item(Game.TEAM_PREFS[i])
+		if i > 0:
+			var swatch := GradientTexture2D.new()
+			swatch.width = 18
+			swatch.height = 18
+			var g := Gradient.new()
+			g.set_color(0, Game.TEAM_COLORS[i - 1])
+			g.set_color(1, Game.TEAM_COLORS[i - 1])
+			swatch.gradient = g
+			pref_select.set_item_icon(i, swatch)
+	pref_select.select(clampi(Game.local_pref, 0, 2))
+	pref_select.item_selected.connect(func(_i): _remember())
+	side_box.add_child(pref_select)
+	class_hint = _caption("Both operators fight for either side. Blue is defense. The host balances teams if needed.")
 	class_hint.modulate = Color(1, 1, 1, 0.6)
 	class_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	vb.add_child(class_hint)
@@ -150,6 +167,7 @@ func _build() -> void:
 func _remember() -> void:
 	Game.local_name = name_edit.text.strip_edges()
 	Game.local_class = class_select.get_item_metadata(class_select.selected)
+	Game.local_pref = pref_select.selected
 	Game.save_settings()
 
 

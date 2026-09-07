@@ -1,14 +1,21 @@
-[gd_scene load_steps=14 format=3 uid="uid://dl2ed4gkybggf"]
+[gd_scene load_steps=22 format=3 uid="uid://dl2ed4gkybggf"]
 
 [ext_resource type="Script" uid="uid://cu47grjp072jk" path="res://objects/player.gd" id="1_ffboj"]
-[ext_resource type="Resource" uid="uid://cu2gtxlcmbb34" path="res://weapons/blaster-repeater.tres" id="2_6epbw"]
 [ext_resource type="Texture2D" uid="uid://8ggihh27mlrr" path="res://sprites/blob_shadow.png" id="2_b0fo8"]
 [ext_resource type="Script" uid="uid://dg01pkkc1c5vd" path="res://scripts/weapon.gd" id="2_i825w"]
-[ext_resource type="Resource" path="res://weapons/ak47.tres" id="3_kr4p8"]
+[ext_resource type="Resource" path="res://weapons/nagant.tres" id="w_0"]
+[ext_resource type="Resource" path="res://weapons/pp19.tres" id="w_1"]
+[ext_resource type="Resource" path="res://weapons/blaster-repeater.tres" id="w_2"]
+[ext_resource type="Resource" path="res://weapons/ak47.tres" id="w_3"]
+[ext_resource type="Resource" path="res://weapons/ar15.tres" id="w_4"]
+[ext_resource type="Resource" path="res://weapons/type81.tres" id="w_5"]
+[ext_resource type="Resource" path="res://weapons/aks74u.tres" id="w_6"]
+[ext_resource type="Resource" path="res://weapons/sks.tres" id="w_7"]
+[ext_resource type="Resource" path="res://weapons/sks-scoped.tres" id="w_8"]
+[ext_resource type="Resource" path="res://weapons/marksman.tres" id="w_9"]
+[ext_resource type="Resource" path="res://weapons/sv98.tres" id="w_10"]
 [ext_resource type="SpriteFrames" uid="uid://dbv3sy5qjatnl" path="res://sprites/burst_animation.tres" id="4_m6ukc"]
 [ext_resource type="AudioStream" uid="uid://cydjn1ct3hps2" path="res://sounds/walking.ogg" id="5_ics1s"]
-[ext_resource type="Resource" path="res://weapons/marksman.tres" id="7_marks"]
-[ext_resource type="Resource" path="res://weapons/pistol.tres" id="8_pistol"]
 [ext_resource type="FontFile" uid="uid://biqtga8moh7ah" path="res://fonts/lilita_one_regular.ttf" id="6_font"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_gdq8c"]
@@ -42,7 +49,7 @@ properties/4/replication_mode = 2
 
 [node name="Player" type="CharacterBody3D"]
 script = ExtResource("1_ffboj")
-weapons = Array[ExtResource("2_i825w")]([ExtResource("8_pistol"), ExtResource("2_6epbw"), ExtResource("3_kr4p8"), ExtResource("7_marks")])
+weapons = Array[ExtResource("2_i825w")]([ExtResource("w_0"), ExtResource("w_1"), ExtResource("w_2"), ExtResource("w_3"), ExtResource("w_4"), ExtResource("w_5"), ExtResource("w_6"), ExtResource("w_7"), ExtResource("w_8"), ExtResource("w_9"), ExtResource("w_10")])
 
 [node name="Collider" type="CollisionShape3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)

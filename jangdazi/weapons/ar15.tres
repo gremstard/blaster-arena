@@ -1,7 +1,7 @@
 [gd_resource type="Resource" script_class="Weapon" load_steps=4 format=3]
 
 [ext_resource type="Texture2D" uid="uid://ce3lgq7foiusl" path="res://sprites/crosshair-repeater.png" id="1_cross"]
-[ext_resource type="PackedScene" path="res://assets/ak-105/source/ak105spraypainted.fbx" id="2_model"]
+[ext_resource type="PackedScene" path="res://assets/ar-15-style-rifle/source/ar style gun.fbx" id="2_model"]
 [ext_resource type="Script" uid="uid://dg01pkkc1c5vd" path="res://scripts/weapon.gd" id="3_script"]
 
 [resource]
@@ -9,24 +9,25 @@ script = ExtResource("3_script")
 model = ExtResource("2_model")
 rotation = Vector3(0, 0, 0)
 position = Vector3(-0.3, 0.45, 0.2)
-model_scale = 0.093
+model_scale = 0.125
 view_scale = 2.0
-texture_dir = "res://assets/ak-105/textures"
+texture_dir = "res://assets/ar-15-style-rifle/textures"
+texture_map = {"optic.001": "acog"}
 muzzle_position = Vector3(0.1, -0.4, 1.5)
-display_name = "AK-105"
+display_name = "AR-15 ACOG"
 mode_name = "Auto"
-cooldown = 0.1
-max_distance = 80
-damage = 9
-spread = 0.5
+cooldown = 0.11
+max_distance = 90
+damage = 11
+spread = 0.4
 shot_count = 1
 knockback = 10
-alt_mode_name = "Burst"
-alt_cooldown = 0.5
-alt_damage = 14
-alt_spread = 0.25
-alt_shot_count = 3
-alt_fov = 0
+alt_mode_name = "ACOG"
+alt_cooldown = 0.2
+alt_damage = 15
+alt_spread = 0.05
+alt_shot_count = 1
+alt_fov = 40
 min_knockback = Vector2(0.015, 0.012)
 max_knockback = Vector2(0.03, 0.02)
 sound_shoot = "sounds/blaster_repeater.ogg"

@@ -6,8 +6,10 @@ and Kenney's CC0 Starter Kit FPS.
 
 ## The game
 
-- **Two sides.** Defenders (FSB Operator, Free Modular) drop into the central plaza.
-  Attackers (Insurgent 2, Insurgent 7) drop in at the city edge.
+- **Two sides, two operators.** Everyone picks an operator and a side preference.
+  Special Op has 130 HP at normal speed, Basic Op has 100 HP and moves 20% faster.
+  Both fight for either side; the model is tinted blue for defenders and red for attackers.
+  Defenders drop into the central plaza, attackers drop in at the city edge.
 - **Round flow.** *Setup* (40 s): both sides loot. *Siege* (4 min): attackers must capture
   the control zone in the plaza, or eliminate every defender. Defenders win by wiping the
   attackers or holding out until the timer. No respawns inside a round.
@@ -15,9 +17,10 @@ and Kenney's CC0 Starter Kit FPS.
   outside takes damage every second.
 - **Winning changes sides.** If the attackers win they take the city and defend it next
   round. Defenders who win stay defenders. First side to 3 round wins takes the match.
-- **Loot economy.** Everyone starts with a pistol. Center loot starts scarce (2 crates)
-  and grows by 2 each round. Outer loot starts rich (28) and shrinks by 4 each round.
-  Crates hold the Repeater, Blaster, Marksman, overshield, health, and power-ups.
+- **Loot economy.** Everyone starts with a Nagant M1895 revolver. Center loot starts
+  scarce (2 crates) and grows by 2 each round. Outer loot starts rich (32) and shrinks by
+  4 each round. Crates hold guns, overshield, health, and power-ups. You carry the sidearm
+  plus three guns; a fourth gun replaces the one in your hands.
 - **Friendly fire is off.** Teammates' name tags show through walls.
 
 | Key | Action |
@@ -26,7 +29,7 @@ and Kenney's CC0 Starter Kit FPS.
 | Space | Jump (double jump) |
 | Left mouse | Shoot |
 | Right mouse | Toggle fire mode |
-| E / 1-4 | Switch between owned weapons |
+| E / 1-4 | Switch between carried weapons (1 is always the revolver) |
 | Tab | Scoreboard |
 | Esc | Menu (host: Start match, Change map, Leave) |
 
@@ -60,18 +63,15 @@ The `assets/` folder (kept out of git, copy it from the `shooter/assets` folder)
 
 ## Character models
 
-Classes are defined in `scripts/game.gd` under `CLASSES`. Each entry names a model file,
-a scale, a yaw, an optional texture folder with a material-name to file-prefix map, and mesh
-names to hide (for example a gun baked into the character). If the model file is missing
-the class falls back to a colored capsule, so the game always runs.
-
-Currently wired:
+Operators are defined in `scripts/game.gd` under `CLASSES`: stats (`max_health`, `speed`),
+a model file, scale, yaw, an optional texture folder with a material-name to file-prefix map,
+and mesh names to hide (for example a gun baked into the character). The model is tinted by
+team at load time. If the model file is missing the operator falls back to a colored capsule.
 
 | Operator | Source | Notes |
 | --- | --- | --- |
-| FSB Operator | `assets/fsb-operator/fsb.glb` | Converted from the Sketchfab `.blend` with `tools/blend2glb.py`; textures mapped from `textures/`; baked-in Krinkov hidden |
-| Free Modular | `assets/FBX/SKM_Character.fbx` | The modular sample pack; shipped without textures, so it renders flat white |
-| Insurgent 2 / 7 | `assets/characters/insurgent_2.glb`, `insurgent_7.glb` | Not yet available; capsules until the Fab packs are exported |
+| Special Op | `assets/fsb-operator/fsb.glb` | Converted from the Sketchfab `.blend` with `tools/blend2glb.py`; textures mapped from `textures/`; baked-in Krinkov hidden |
+| Basic Op | `assets/FBX/SKM_Character.fbx` | The modular sample pack; shipped without textures, so it renders as the team tint |
 
 To convert a `.blend` (Blender is installed at `/Applications/Blender.app`):
 
@@ -83,8 +83,8 @@ Put a `.gdignore` file in any folder holding the original `.blend` so Godot does
 import it. Textures that the blend referenced from the author's disk are not embedded; map
 them by material name in the class entry instead.
 
-For Unreal-only Fab packs: add them to a blank Unreal project, right-click the skeletal
-mesh, **Asset Actions > Export** as FBX, and point the class entry at the file.
+Fab downloads are signed links that expire within minutes; a "zip" of a few hundred bytes
+is an error page, so re-download and check the size.
 
 ## Map editor
 
@@ -115,8 +115,10 @@ one zone, at least one spawn of each side, and some loot spots. Saved maps live 
 /Applications/Godot.app/Contents/MacOS/Godot --path . -- --join=127.0.0.1 --name=Guest --class="Insurgent 2"
 ```
 
-`--fast` shortens phases (6 s setup, 30 s siege). Other flags: `--autostart=N` starts the
-match after N seconds, `--test-zone` puts you in the zone when the siege starts,
+`--fast` shortens phases (6 s setup, 30 s siege). Other flags: `--team=1|2` forces a side
+preference, `--autostart=N` starts the match after N seconds, `--test-loot --weapon=N` hands
+you every gun and selects one, `--dump-viewmodel` prints the first-person weapon subtree,
+`--test-zone` puts you in the zone when the siege starts,
 `--test-hit` kills the host every 4 s, `--screenshot=PATH`, `--screenshot-delay=N`,
 `--editor`, `--map=NAME`. Add `--headless` before `--` for a windowless peer.
 

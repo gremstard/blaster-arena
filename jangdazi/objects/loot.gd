@@ -3,12 +3,19 @@ class_name LootCrate
 # Loot crate spawned by the host at round start. First alive player to touch it
 # gets a random item; the host then removes the crate (replicated by the spawner).
 
-const ITEMS := { # item -> weight
-	"weapon:1": 3, # Repeater
-	"weapon:2": 3, # AK-47
-	"weapon:3": 2, # Marksman
-	"shield": 3,
-	"health": 2,
+const ITEMS := { # item -> weight (weapon indexes match the Player's weapons array)
+	"weapon:1": 3, # PP-19 Vityaz
+	"weapon:2": 3, # AK-105
+	"weapon:3": 3, # AK-47
+	"weapon:4": 2, # AR-15 ACOG
+	"weapon:5": 2, # Type-81
+	"weapon:6": 1, # Gold AKS-74U
+	"weapon:7": 2, # SKS
+	"weapon:8": 2, # SKS scoped
+	"weapon:9": 2, # M4 Marksman
+	"weapon:10": 1, # SV-98
+	"shield": 4,
+	"health": 3,
 	"damage": 1,
 	"speed": 1,
 }

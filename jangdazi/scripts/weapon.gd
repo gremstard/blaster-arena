@@ -7,8 +7,11 @@ class_name Weapon
 @export var rotation: Vector3 # On-screen rotation
 @export var muzzle_position: Vector3 # On-screen position of muzzle flash
 @export var tint: Color = Color.WHITE # Multiplied over the model (lets two weapons share a model)
-@export var model_scale: float = 1.0 # Uniform scale applied to the model
+@export var model_scale: float = 1.0 # Uniform scale that brings the model to real-world size
+@export var view_scale: float = 2.0 # Extra scale for the first-person viewmodel only
 @export var texture_dir: String = "" # Folder with <material>_albedo/normal/roughness/metallic textures to apply by material name
+@export var texture_map: Dictionary = {} # Optional material name -> file prefix (or {slot: file}) overrides
+@export var auto_center: bool = true # Shift the model so its bounding box center sits at the origin
 
 @export_subgroup("Properties")
 @export var display_name: String = "Blaster"
@@ -40,7 +43,22 @@ class_name Weapon
 
 # Instantiates the model, applying scale, tint and any textures found in texture_dir.
 func build_model() -> Node3D:
-	var node: Node3D = model.instantiate()
-	node.scale = Vector3.ONE * model_scale
-	ModelTextures.apply(node, texture_dir, {}, tint)
-	return node
+	var inner: Node3D = model.instantiate()
+	inner.scale = Vector3.ONE * model_scale
+	ModelTextures.apply(inner, texture_dir, texture_map, tint)
+	var holder := Node3D.new()
+	holder.add_child(inner)
+	if auto_center:
+		var aabb := AABB()
+		var first := true
+		for m in inner.find_children("*", "MeshInstance3D"):
+			var a: AABB = m.transform * m.get_aabb()
+			var p := m.get_parent()
+			while p and p != holder:
+				a = p.transform * a
+				p = p.get_parent()
+			aabb = a if first else aabb.merge(a)
+			first = false
+		if not first:
+			inner.position = -aabb.get_center()
+	return holder

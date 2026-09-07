@@ -11,11 +11,10 @@ const TEAM_ATT := 1
 const TEAM_NAMES := ["Defenders", "Attackers"]
 const TEAM_COLORS := [Color(0.35, 0.6, 1.0), Color(1.0, 0.45, 0.3)]
 
-# Character classes. "model" is loaded if the file exists, otherwise a colored capsule is shown.
-# "textures" + "map" apply PBR textures by material name; "hide" lists mesh names to drop
-# (e.g. a gun baked into the character); "scale" fits the model to ~1.75 m.
+# Operator classes, available to both sides. The model is tinted by team (blue = defenders).
+# "model" is loaded if the file exists, otherwise a colored capsule is shown.
 const CLASSES := {
-	"FSB Operator": {"team": TEAM_DEF, "color": Color(0.3, 0.5, 0.9),
+	"Special Op": {"desc": "+30 HP, standard speed", "max_health": 130, "speed": 1.0,
 		"model": "res://assets/fsb-operator/fsb.glb", "scale": 1.15, "yaw": 180.0,
 		"textures": "res://assets/fsb-operator/textures",
 		"map": {"uniform": "scp_operator_uniform", "helmet": "scp_operator_helmet", "mask": "scp_operator_mask",
@@ -23,13 +22,10 @@ const CLASSES := {
 			"boots": "boot", "face": "swat_face", "eyes": "254264-brown-eye", "fsb patch": "fsb_patch",
 			"Krinkov": "krinkov_sketchfab_krinkov", "Magazine": "krinkov_sketchfab_magazine"},
 		"hide": ["Gun", "Magazine", "Magazine_001", "Magazine_002", "Magazine_003", "Magazine_004", "Stock", "Plane", "Plane_001"]},
-	"Free Modular": {"team": TEAM_DEF, "color": Color(0.45, 0.7, 0.95),
+	"Basic Op": {"desc": "100 HP, +20% speed", "max_health": 100, "speed": 1.2,
 		"model": "res://assets/FBX/SKM_Character.fbx", "scale": 0.95, "yaw": 180.0, "textures": "", "map": {}, "hide": []},
-	"Insurgent 2": {"team": TEAM_ATT, "color": Color(0.9, 0.4, 0.25),
-		"model": "res://assets/characters/insurgent_2.glb", "scale": 1.0, "yaw": 180.0, "textures": "", "map": {}, "hide": []},
-	"Insurgent 7": {"team": TEAM_ATT, "color": Color(0.85, 0.3, 0.45),
-		"model": "res://assets/characters/insurgent_7.glb", "scale": 1.0, "yaw": 180.0, "textures": "", "map": {}, "hide": []},
 }
+const TEAM_PREFS := ["Auto", "Defenders", "Attackers"]
 const PRESET_NAMES := ["Ace", "Blaze", "Comet", "Dash", "Echo", "Frost", "Ghost", "Havoc", "Ion", "Jinx",
 	"Karma", "Lynx", "Maverick", "Nova", "Onyx", "Pixel", "Quake", "Rogue", "Spark", "Titan", "Vortex", "Zed"]
 
@@ -50,7 +46,8 @@ signal round_ended(winner_team: int)
 signal match_ended(winner_team: int)
 
 var local_name := "Player"
-var local_class := "FSB Operator"
+var local_class := "Special Op"
+var local_pref := 0 # 0 auto, 1 defenders, 2 attackers
 var last_ip := "127.0.0.1"
 var fall_y := -30.0
 
@@ -79,6 +76,7 @@ func load_settings() -> void:
 	if cfg.load(SETTINGS_PATH) == OK:
 		local_name = cfg.get_value("player", "name", PRESET_NAMES[randi() % PRESET_NAMES.size()])
 		local_class = cfg.get_value("player", "class", CLASSES.keys()[randi() % CLASSES.size()])
+		local_pref = int(cfg.get_value("player", "pref", 0))
 		last_ip = cfg.get_value("net", "last_ip", "127.0.0.1")
 	else:
 		local_name = PRESET_NAMES[randi() % PRESET_NAMES.size()]
@@ -91,6 +89,7 @@ func save_settings() -> void:
 	var cfg := ConfigFile.new()
 	cfg.set_value("player", "name", local_name)
 	cfg.set_value("player", "class", local_class)
+	cfg.set_value("player", "pref", local_pref)
 	cfg.set_value("net", "last_ip", last_ip)
 	cfg.save(SETTINGS_PATH)
 
@@ -103,7 +102,7 @@ func host() -> Error:
 	if err != OK:
 		return err
 	multiplayer.multiplayer_peer = peer
-	players = {1: _entry(local_name, local_class)}
+	players = {1: _entry(local_name, local_class, local_pref)}
 	_reset_match_state()
 	players_changed.emit()
 	return OK
@@ -162,8 +161,15 @@ func team_of(id: int) -> int:
 
 
 func color_of(id: int) -> Color:
-	var cls := class_of(id)
-	return CLASSES[cls].color if CLASSES.has(cls) else Color.WHITE
+	return TEAM_COLORS[team_of(id)]
+
+
+func max_health_of(id: int) -> int:
+	return int(CLASSES[class_of(id)].max_health)
+
+
+func speed_of(id: int) -> float:
+	return float(CLASSES[class_of(id)].speed)
 
 
 func local_team() -> int:
@@ -208,12 +214,13 @@ func sorted_ids() -> Array:
 	return ids
 
 
-func _entry(pname: String, cls: String) -> Dictionary:
-	return {"name": pname, "cls": cls, "team": CLASSES[cls].team, "alive": true, "kills": 0, "deaths": 0}
+func _entry(pname: String, cls: String, pref: int) -> Dictionary:
+	var team := TEAM_ATT if pref == 2 else TEAM_DEF
+	return {"name": pname, "cls": cls, "pref": pref, "team": team, "alive": true, "kills": 0, "deaths": 0}
 
 
 func _on_connected_to_server() -> void:
-	register.rpc_id(1, local_name, local_class)
+	register.rpc_id(1, local_name, local_class, local_pref)
 
 
 func _on_peer_disconnected(id: int) -> void:
@@ -227,7 +234,7 @@ func _on_peer_disconnected(id: int) -> void:
 # --- Client -> host ---
 
 @rpc("any_peer", "reliable")
-func register(pname: String, cls: String) -> void:
+func register(pname: String, cls: String, pref: int) -> void:
 	if not multiplayer.is_server():
 		return
 	var id := multiplayer.get_remote_sender_id()
@@ -236,7 +243,7 @@ func register(pname: String, cls: String) -> void:
 		pname = "Player %d" % id
 	if not CLASSES.has(cls):
 		cls = CLASSES.keys()[0]
-	players[id] = _entry(pname, cls)
+	players[id] = _entry(pname, cls, clampi(pref, 0, 2))
 	if phase != Phase.LOBBY:
 		players[id].alive = false # joined mid-round: spectate until next round
 	sync_players.rpc(players)
@@ -246,36 +253,31 @@ func register(pname: String, cls: String) -> void:
 
 # --- Host only: teams, kills ---
 
-# Balance teams while honoring class choice where possible
+# Balance teams while honoring side preference where possible
 func assign_teams() -> void:
 	var ids := players.keys()
 	ids.shuffle()
+	# Players with a preference go first, "Auto" players fill the gaps
+	ids.sort_custom(func(a, b): return players[a].pref != 0 and players[b].pref == 0)
 	var counts := [0, 0]
 	for id in ids:
-		var want: int = CLASSES[players[id].cls].team
-		var other := 1 - want
-		var team := want
-		if counts[want] > counts[other]: # would unbalance: send to the other side
-			team = other
+		var pref: int = players[id].pref
+		var team: int
+		if pref == 0:
+			team = TEAM_DEF if counts[TEAM_DEF] <= counts[TEAM_ATT] else TEAM_ATT
+		else:
+			team = TEAM_DEF if pref == 1 else TEAM_ATT
+			if counts[team] > counts[1 - team]: # would unbalance by 2: send to the other side
+				team = 1 - team
 		players[id].team = team
 		counts[team] += 1
-		_fix_class_for_team(id)
 	sync_players.rpc(players)
 
 
 func swap_teams() -> void:
 	for id in players:
 		players[id].team = 1 - players[id].team
-		_fix_class_for_team(id)
 	sync_players.rpc(players)
-
-
-func _fix_class_for_team(id: int) -> void:
-	if CLASSES[players[id].cls].team != players[id].team:
-		for cls in CLASSES:
-			if CLASSES[cls].team == players[id].team:
-				players[id].cls = cls
-				break
 
 
 func set_all_alive(alive: bool) -> void:

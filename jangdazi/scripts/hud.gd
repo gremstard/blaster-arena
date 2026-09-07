@@ -145,9 +145,9 @@ func _build() -> void:
 	health_label = _label("100", 36)
 	health_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	hp_box.add_child(health_label)
-	health_bar = _bar(Color(0.4, 0.9, 0.45), Player.MAX_HEALTH)
+	health_bar = _bar(Color(0.4, 0.9, 0.45), Player.BASE_HEALTH)
 	hp_box.add_child(health_bar)
-	shield_bar = _bar(Color(0.4, 0.75, 1.0), Player.MAX_OVERSHIELD - Player.MAX_HEALTH, 8)
+	shield_bar = _bar(Color(0.4, 0.75, 1.0), Player.OVERSHIELD, 8)
 	shield_bar.value = 0
 	hp_box.add_child(shield_bar)
 
@@ -310,16 +310,17 @@ func reset() -> void:
 	banner.visible = false
 	crosshair.modulate = Color.WHITE
 	vignette.color.a = 0
-	set_health(Player.MAX_HEALTH)
+	set_health(Player.BASE_HEALTH, Player.BASE_HEALTH)
 	set_effects({})
 	set_dropping(false)
 	_refresh_team()
 
 
-func set_health(value: int) -> void:
+func set_health(value: int, max_value: int = Player.BASE_HEALTH) -> void:
 	health_label.text = str(value)
-	health_bar.value = min(value, Player.MAX_HEALTH)
-	shield_bar.value = max(0, value - Player.MAX_HEALTH)
+	health_bar.max_value = max_value
+	health_bar.value = min(value, max_value)
+	shield_bar.value = max(0, value - max_value)
 	var fill: StyleBoxFlat = health_bar.get_theme_stylebox("fill")
 	fill.bg_color = Color(0.4, 0.9, 0.45) if value > 35 else Color(1, 0.35, 0.3)
 
@@ -334,9 +335,9 @@ func set_weapon(weapon_name: String, mode: String) -> void:
 
 func set_inventory(owned: Array, current: int, weapons: Array) -> void:
 	var parts := []
-	for i in weapons.size():
-		if owned.has(i):
-			parts.append(("[%d] %s" if i == current else "%d %s") % [i + 1, weapons[i].display_name])
+	for n in owned.size():
+		var i: int = owned[n]
+		parts.append(("[%d] %s" if i == current else "%d %s") % [n + 1, weapons[i].display_name])
 	inventory_label.text = "   ".join(parts)
 
 
@@ -453,7 +454,7 @@ func _refresh_scoreboard() -> void:
 	scoreboard_box.add_child(title)
 	var header := HBoxContainer.new()
 	scoreboard_box.add_child(header)
-	_add_row(header, ["Player", "Class", "Team", "K", "D"], 22, Color.WHITE)
+	_add_row(header, ["Player", "Operator", "Team", "K", "D"], 22, Color.WHITE)
 	for id in Game.sorted_ids():
 		var p: Dictionary = Game.players[id]
 		var row := HBoxContainer.new()

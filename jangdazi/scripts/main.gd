@@ -41,10 +41,22 @@ func _ready() -> void:
 	ring_mesh.visible = false
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	level.build(LevelBuilder.default_map())
+	_preload_textures()
 	_handle_cmdline()
 
 
+# Background-load weapon and operator textures so pickups never stall the game
+func _preload_textures() -> void:
+	var probe: Player = PLAYER_SCENE.instantiate()
+	for w in probe.weapons:
+		ModelTextures.preload_dir(w.texture_dir)
+	probe.free()
+	for cls in Game.CLASSES:
+		ModelTextures.preload_dir(String(Game.CLASSES[cls].get("textures", "")))
+
+
 func _process(delta: float) -> void:
+	ModelTextures.poll()
 	if menu_camera.current:
 		menu_camera.rotate_y(delta * 0.04)
 		menu_camera.look_at(Vector3(0, 2, 0))
@@ -140,8 +152,18 @@ func _on_server_disconnected() -> void:
 
 
 func _on_peer_connected(id: int) -> void:
+	_relax_timeout(id)
 	if multiplayer.is_server():
 		receive_map.rpc_id(id, JSON.stringify(level.data), Game.local_name)
+
+
+# Loading big models can stall a peer for a few seconds; do not drop them for it
+func _relax_timeout(id: int) -> void:
+	var peer := multiplayer.multiplayer_peer
+	if peer is ENetMultiplayerPeer:
+		var p: ENetPacketPeer = peer.get_peer(id)
+		if p:
+			p.set_timeout(20000, 5000, 30000)
 
 
 func _on_peer_disconnected(id: int) -> void:
@@ -422,6 +444,8 @@ func _handle_cmdline() -> void:
 		lobby.name_edit.text = args["name"]
 	if args.has("class") and Game.CLASSES.has(args["class"]):
 		Game.local_class = args["class"]
+	if args.has("team"):
+		Game.local_pref = int(args["team"]) # 0 auto, 1 defenders, 2 attackers
 	if args.has("host"):
 		host_game(args.get("map", ""))
 	elif args.has("join"):
@@ -474,6 +498,18 @@ func _handle_cmdline() -> void:
 						me.position = other.sync_position + Vector3(2.2, 0.2, 2.2)
 					me.face_toward(other.sync_position + Vector3(0, 1.2, 0))
 					break)
+	if args.has("dump-viewmodel"): # debug: print the first-person weapon subtree
+		get_tree().create_timer(5.0).timeout.connect(func():
+			var me: Player = players_root.get_node_or_null(str(multiplayer.get_unique_id()))
+			if me == null:
+				return
+			print("[vm] weapon=", me.weapon.display_name, " viewmodel.visible=", me.viewmodel.visible, " vp mode=", me.viewmodel_viewport.render_target_update_mode)
+			print("[vm] container pos=", me.container.position, " children=", me.container.get_child_count())
+			for c in me.container.get_children():
+				print("[vm]  holder ", c.name, " pos=", c.position, " scale=", c.scale, " rot=", c.rotation_degrees)
+				for mi in c.find_children("*", "MeshInstance3D", true, false):
+					var ab: AABB = mi.global_transform * mi.get_aabb()
+					print("[vm]    mesh ", mi.name, " layers=", mi.layers, " visible=", mi.is_visible_in_tree(), " aabb(cam-space)=", me.container.get_parent().global_transform.affine_inverse() * ab))
 	if args.has("screenshot"):
 		get_tree().create_timer(float(args.get("screenshot-delay", "3.0")), true).timeout.connect(func():
 			get_viewport().get_texture().get_image().save_png(args["screenshot"])

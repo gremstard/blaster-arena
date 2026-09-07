@@ -13,15 +13,16 @@ class_name Player
 @export_subgroup("Weapons")
 @export var weapons: Array[Weapon] = [] # index 0 is the starting pistol
 
-const MAX_HEALTH := 100
-const MAX_OVERSHIELD := 150
-const HAND_WEAPON_SCALE := 0.9
+const BASE_HEALTH := 100
+const OVERSHIELD := 50
+const HAND_WEAPON_SCALE := 1.0
 const BASE_FOV := 80.0
 const POWERUP_SECONDS := 15.0
 const SPEED_MULT := 1.5
 const DAMAGE_MULT := 1.75
 const DROP_FALL_SPEED := 12.0 # terminal velocity while dropping in
 const DROP_AIR_SPEED := 9.0
+const MAX_OWNED := 4 # sidearm + 3 guns
 
 enum Pickup { HEALTH, SHIELD, SPEED, DAMAGE }
 
@@ -35,7 +36,7 @@ var weapon_index := 0
 var fire_mode := 0
 
 # --- Host-authoritative ---
-var health := MAX_HEALTH
+var health := BASE_HEALTH
 var dead := false
 
 var owned: Array[int] = [0]
@@ -76,6 +77,7 @@ var _hand_weapon_index := -1
 const IMPACT := preload("res://objects/impact.tscn")
 
 var _body_material := StandardMaterial3D.new()
+var _model_tint := Color.WHITE
 var _aura_material := StandardMaterial3D.new()
 var _loaded_class := ""
 
@@ -92,8 +94,17 @@ func team() -> int:
 	return Game.team_of(peer_id())
 
 
+func max_health() -> int:
+	return Game.max_health_of(peer_id())
+
+
+func max_overshield() -> int:
+	return max_health() + OVERSHIELD
+
+
 func _ready() -> void:
 	weapon = weapons[0]
+	health = max_health()
 	raycast.add_exception(self)
 	sync_position = position
 	sync_rotation_y = rotation.y
@@ -125,7 +136,7 @@ func _ready() -> void:
 
 func _push_hud() -> void:
 	if hud:
-		hud.set_health(health)
+		hud.set_health(health, max_health())
 		hud.set_effects(effects)
 		hud.set_inventory(owned, weapon_index, weapons)
 
@@ -151,9 +162,13 @@ func _refresh_identity() -> void:
 	_body_material.albedo_color = Game.color_of(peer_id())
 	# Show teammates' labels through walls, enemies only in line of sight
 	name_label.no_depth_test = not is_local() and team() == Game.local_team()
-	if cls != _loaded_class:
+	var tint := Color.WHITE.lerp(Game.TEAM_COLORS[team()], 0.6)
+	if cls != _loaded_class or tint != _model_tint:
 		_loaded_class = cls
+		_model_tint = tint
 		_load_class_model(cls)
+	if is_local() and hud:
+		hud.set_health(health, max_health())
 
 
 # Uses a real character model when the class defines one that exists on disk
@@ -177,8 +192,7 @@ func _load_class_model(cls: String) -> void:
 		var n := inst.find_child(hidden, true, false)
 		if n:
 			n.visible = false
-	if not String(info.get("textures", "")).is_empty():
-		ModelTextures.apply(inst, info.textures, info.get("map", {}))
+	ModelTextures.apply(inst, String(info.get("textures", "")), info.get("map", {}), _model_tint)
 	model_holder.add_child(inst)
 	# Loop the first animation as an idle
 	for ap in inst.find_children("*", "AnimationPlayer"):
@@ -292,7 +306,7 @@ func handle_controls(delta: float) -> void:
 	_handle_mouse_capture()
 
 	var input := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
-	var speed := movement_speed * (SPEED_MULT if has_effect(Pickup.SPEED) else 1.0)
+	var speed := movement_speed * Game.speed_of(peer_id()) * (SPEED_MULT if has_effect(Pickup.SPEED) else 1.0)
 	if dropping:
 		speed = DROP_AIR_SPEED
 	movement_velocity = Vector3(input.x, 0, input.y).normalized() * speed
@@ -460,7 +474,7 @@ func sync_health(value: int) -> void:
 	var previous := health
 	health = value
 	if is_local() and hud:
-		hud.set_health(health)
+		hud.set_health(health, max_health())
 		if value < previous:
 			hud.damage_flash()
 			Audio.play("sounds/enemy_hurt.ogg")
@@ -479,7 +493,7 @@ func die(killer_id: int) -> void:
 		velocity = Vector3.ZERO
 		viewmodel.visible = false
 		if hud:
-			hud.set_health(0)
+			hud.set_health(0, max_health())
 			hud.set_effects(effects)
 			hud.set_dropping(false)
 			hud.show_death(Game.name_of(killer_id), killer_id <= 0 or killer_id == peer_id())
@@ -497,7 +511,7 @@ func spectate() -> void:
 @rpc("any_peer", "call_local", "reliable")
 func reset_for_round(pos: Vector3, drop: bool) -> void:
 	dead = false
-	health = MAX_HEALTH
+	health = max_health()
 	effects.clear()
 	owned = [0]
 	weapon_index = 0
@@ -527,9 +541,9 @@ func can_pickup(type: Pickup) -> bool:
 		return false
 	match type:
 		Pickup.HEALTH:
-			return health < MAX_HEALTH
+			return health < max_health()
 		Pickup.SHIELD:
-			return health < MAX_OVERSHIELD
+			return health < max_overshield()
 	return true
 
 
@@ -541,19 +555,25 @@ func give_loot(item: String) -> void:
 		var idx := int(item.trim_prefix("weapon:"))
 		if idx >= 0 and idx < weapons.size():
 			var is_new := not owned.has(idx)
+			var dropped := -1
 			if is_new:
+				if owned.size() >= MAX_OWNED:
+					# Replace the gun in hand (never the sidearm in slot 0)
+					dropped = weapon_index if weapon_index != 0 else owned[owned.size() - 1]
+					owned.erase(dropped)
 				owned.append(idx)
-				owned.sort()
 			if is_local():
 				if is_new:
 					initiate_change_weapon(idx)
 				else:
-					apply_pickup(Pickup.HEALTH if health < MAX_HEALTH else Pickup.SHIELD)
+					apply_pickup(Pickup.HEALTH if health < max_health() else Pickup.SHIELD)
 					return
 				if hud:
 					hud.set_inventory(owned, weapon_index, weapons)
-					hud.pickup_toast("Picked up %s" % weapons[idx].display_name)
+					hud.pickup_toast("Picked up %s" % weapons[idx].display_name + ("" if dropped < 0 else "  (dropped %s)" % weapons[dropped].display_name))
 				Audio.play("sounds/weapon_change.ogg")
+			elif weapon_index == dropped:
+				_hand_weapon_index = -1
 		return
 	match item:
 		"health": apply_pickup(Pickup.HEALTH)
@@ -568,15 +588,15 @@ func apply_pickup(type: Pickup) -> void:
 		return
 	match type:
 		Pickup.HEALTH:
-			health = min(health + 50, MAX_HEALTH)
+			health = min(health + 50, max_health())
 		Pickup.SHIELD:
-			health = min(health + 50, MAX_OVERSHIELD)
+			health = min(health + 50, max_overshield())
 		Pickup.SPEED, Pickup.DAMAGE:
 			effects[type] = Time.get_ticks_msec() + int(POWERUP_SECONDS * 1000)
 	if is_local():
 		Audio.play("sounds/weapon_change.ogg")
 		if hud:
-			hud.set_health(health)
+			hud.set_health(health, max_health())
 			hud.set_effects(effects)
 			hud.pickup_flash(type)
 	else:
@@ -590,9 +610,9 @@ func action_weapon_toggle() -> void:
 	if Input.is_action_just_pressed("weapon_toggle"):
 		var i := owned.find(weapon_index)
 		target = owned[wrapi(i + 1, 0, owned.size())]
-	for slot in weapons.size():
-		if Input.is_action_just_pressed("weapon_%d" % (slot + 1)) and owned.has(slot):
-			target = slot
+	for n in MAX_OWNED:
+		if Input.is_action_just_pressed("weapon_%d" % (n + 1)) and n < owned.size():
+			target = owned[n]
 	if target >= 0 and target != weapon_index:
 		initiate_change_weapon(target)
 		Audio.play("sounds/weapon_change.ogg")
@@ -613,10 +633,11 @@ func change_weapon() -> void:
 		container.remove_child(n)
 		n.queue_free()
 	var weapon_model: Node3D = weapon.build_model()
+	weapon_model.scale = Vector3.ONE * weapon.view_scale
 	container.add_child(weapon_model)
 	weapon_model.position = weapon.position
 	weapon_model.rotation_degrees = weapon.rotation
-	for child in weapon_model.find_children("*", "MeshInstance3D"):
+	for child in weapon_model.find_children("*", "MeshInstance3D", true, false):
 		child.layers = 2
 	raycast.target_position = Vector3(0, 0, -1) * weapon.max_distance
 	if hud:
