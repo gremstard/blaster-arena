@@ -236,11 +236,6 @@ func _build_ui() -> void:
 	top.add_child(help)
 
 	var panel := PanelContainer.new()
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0, 0, 0, 0.55)
-	style.set_corner_radius_all(12)
-	style.set_content_margin_all(14)
-	panel.add_theme_stylebox_override("panel", style)
 	panel.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
 	panel.position = Vector2(-300, 20)
 	panel.custom_minimum_size = Vector2(280, 0)

@@ -5,12 +5,9 @@ signal host_requested(map_name: String)
 signal join_requested(ip: String)
 signal editor_requested
 
-const FONT := preload("res://fonts/lilita_one_regular.ttf")
-
 var name_select: OptionButton
 var name_edit: LineEdit
 var class_select: OptionButton
-var class_hint: Label
 var pref_select: OptionButton
 var map_select: OptionButton
 var ip_edit: LineEdit
@@ -24,42 +21,44 @@ func _ready() -> void:
 
 
 func _build() -> void:
+	var dim := ColorRect.new()
+	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	dim.color = Color(0.02, 0.03, 0.05, 0.45)
+	dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(dim)
+
 	var center := CenterContainer.new()
 	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(center)
 
-	var panel := PanelContainer.new()
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0, 0, 0, 0.6)
-	style.set_corner_radius_all(16)
-	style.set_content_margin_all(28)
-	panel.add_theme_stylebox_override("panel", style)
-	panel.custom_minimum_size = Vector2(500, 0)
-	center.add_child(panel)
+	var root := VBoxContainer.new()
+	root.custom_minimum_size = Vector2(880, 0)
+	root.add_theme_constant_override("separation", 14)
+	center.add_child(root)
 
-	var vb := VBoxContainer.new()
-	vb.add_theme_constant_override("separation", 10)
-	panel.add_child(vb)
+	# Header
+	var header := VBoxContainer.new()
+	header.add_theme_constant_override("separation", 0)
+	root.add_child(header)
+	header.add_child(UITheme.heading("JANGDAZI", 64))
+	var tag := UITheme.caption("CITY SIEGE  ·  DROP IN  ·  LOOT  ·  TAKE THE ZONE", false)
+	tag.modulate = UITheme.ACCENT
+	header.add_child(tag)
+	header.add_child(UITheme.caption("Attackers who win the round become its defenders."))
 
-	var title := Label.new()
-	title.text = "JANGDAZI"
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	var ls := LabelSettings.new()
-	ls.font = FONT
-	ls.font_size = 48
-	ls.outline_size = 12
-	ls.outline_color = Color(0, 0, 0, 0.5)
-	title.label_settings = ls
-	vb.add_child(title)
-	var sub := _caption("Siege the city. Attackers who win become its defenders.")
-	sub.modulate = Color(1, 1, 1, 0.7)
-	vb.add_child(sub)
+	# Two cards: operator | deploy
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 14)
+	root.add_child(row)
 
-	vb.add_child(_caption("Your name"))
+	var op := UITheme.card("OPERATOR")
+	row.add_child(op[0])
+	var ov: VBoxContainer = op[1]
+	ov.add_child(_field("Callsign"))
 	var name_row := HBoxContainer.new()
-	vb.add_child(name_row)
+	ov.add_child(name_row)
 	name_select = OptionButton.new()
-	name_select.add_item("Pick a name...")
+	name_select.add_item("Pick...")
 	for n in Game.PRESET_NAMES:
 		name_select.add_item(n)
 	name_select.item_selected.connect(func(i):
@@ -75,93 +74,87 @@ func _build() -> void:
 	name_edit.text_changed.connect(func(_t): _remember())
 	name_row.add_child(name_edit)
 
-	var pick_row := HBoxContainer.new()
-	vb.add_child(pick_row)
-	var op_box := VBoxContainer.new()
-	op_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	pick_row.add_child(op_box)
-	op_box.add_child(_caption("Operator"))
+	ov.add_child(_field("Class"))
 	class_select = OptionButton.new()
 	var idx := 0
 	for cls in Game.CLASSES:
-		var info: Dictionary = Game.CLASSES[cls]
-		class_select.add_item("%s  -  %s" % [cls, info.desc])
+		class_select.add_item("%s  -  %s" % [cls, Game.CLASSES[cls].desc])
 		class_select.set_item_metadata(idx, cls)
 		if cls == Game.local_class:
 			class_select.select(idx)
 		idx += 1
 	class_select.item_selected.connect(func(_i): _remember())
-	op_box.add_child(class_select)
-	var side_box := VBoxContainer.new()
-	side_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	pick_row.add_child(side_box)
-	side_box.add_child(_caption("Side"))
+	ov.add_child(class_select)
+
+	ov.add_child(_field("Side"))
 	pref_select = OptionButton.new()
 	for i in Game.TEAM_PREFS.size():
 		pref_select.add_item(Game.TEAM_PREFS[i])
 		if i > 0:
-			var swatch := GradientTexture2D.new()
-			swatch.width = 18
-			swatch.height = 18
-			var g := Gradient.new()
-			g.set_color(0, Game.TEAM_COLORS[i - 1])
-			g.set_color(1, Game.TEAM_COLORS[i - 1])
-			swatch.gradient = g
-			pref_select.set_item_icon(i, swatch)
+			pref_select.set_item_icon(i, _swatch(Game.TEAM_COLORS[i - 1]))
 	pref_select.select(clampi(Game.local_pref, 0, 2))
 	pref_select.item_selected.connect(func(_i): _remember())
-	side_box.add_child(pref_select)
-	class_hint = _caption("Both operators fight for either side. Blue is defense. The host balances teams if needed.")
-	class_hint.modulate = Color(1, 1, 1, 0.6)
-	class_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	vb.add_child(class_hint)
+	ov.add_child(pref_select)
+	ov.add_child(UITheme.caption("Both classes fight for either side. Blue defends, red attacks. The host balances teams."))
 
-	vb.add_child(HSeparator.new())
-
-	var map_row := HBoxContainer.new()
-	vb.add_child(map_row)
-	map_row.add_child(_caption("Map"))
+	var dep := UITheme.card("DEPLOY")
+	row.add_child(dep[0])
+	var dv: VBoxContainer = dep[1]
+	dv.add_child(_field("Map"))
 	map_select = OptionButton.new()
-	map_select.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	map_row.add_child(map_select)
+	dv.add_child(map_select)
 	refresh_maps()
 	host_button = Button.new()
-	host_button.text = "Host game"
+	host_button.text = "HOST GAME"
 	host_button.pressed.connect(func():
 		_remember()
 		host_requested.emit(map_select.get_item_text(map_select.selected) if map_select.selected > 0 else ""))
-	vb.add_child(host_button)
-
-	vb.add_child(_caption("Host IP"))
+	dv.add_child(host_button)
+	dv.add_child(_field("Host IP"))
 	ip_edit = LineEdit.new()
 	ip_edit.text = Game.last_ip
 	ip_edit.placeholder_text = "e.g. 192.168.1.20"
-	vb.add_child(ip_edit)
+	dv.add_child(ip_edit)
 	join_button = Button.new()
-	join_button.text = "Join game"
+	join_button.text = "JOIN GAME"
 	join_button.pressed.connect(func():
 		_remember()
 		join_requested.emit(ip_edit.text.strip_edges()))
-	vb.add_child(join_button)
-
-	vb.add_child(HSeparator.new())
+	dv.add_child(join_button)
 	var editor_button := Button.new()
 	editor_button.text = "Map editor"
 	editor_button.pressed.connect(func(): editor_requested.emit())
-	vb.add_child(editor_button)
+	dv.add_child(editor_button)
 
-	status_label = _caption("")
-	status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	vb.add_child(status_label)
+	# Footer
+	var foot := PanelContainer.new()
+	root.add_child(foot)
+	var fv := VBoxContainer.new()
+	foot.add_child(fv)
+	status_label = UITheme.caption("", false)
+	status_label.modulate = UITheme.ACCENT
+	fv.add_child(status_label)
+	fv.add_child(UITheme.caption("Your LAN IP: " + ", ".join(local_ips()) + "   ·   Host shares this, friends paste it.   ·   UDP port %d" % Game.PORT))
+	fv.add_child(UITheme.caption("WASD move  ·  Space double jump  ·  LMB shoot  ·  RMB fire mode  ·  E / 1-4 weapons  ·  Tab scores  ·  Esc menu"))
 
-	var ips := _caption("Your LAN IP: " + ", ".join(local_ips()) + "\nHost shares this; friends paste it above. Port %d." % Game.PORT)
-	ips.modulate = Color(1, 1, 1, 0.7)
-	vb.add_child(ips)
 
-	var controls := _caption("WASD move · Space double jump · LMB shoot · RMB fire mode · E / 1-4 weapons · Tab scores · Esc menu")
-	controls.modulate = Color(1, 1, 1, 0.6)
-	controls.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	vb.add_child(controls)
+func _field(text: String) -> Label:
+	var l := Label.new()
+	l.text = text.to_upper()
+	l.modulate = UITheme.TEXT_DIM
+	l.add_theme_font_size_override("font_size", 14)
+	return l
+
+
+static func _swatch(color: Color) -> GradientTexture2D:
+	var swatch := GradientTexture2D.new()
+	swatch.width = 18
+	swatch.height = 18
+	var g := Gradient.new()
+	g.set_color(0, color)
+	g.set_color(1, color)
+	swatch.gradient = g
+	return swatch
 
 
 func _remember() -> void:
@@ -179,13 +172,6 @@ func refresh_maps() -> void:
 		map_select.add_item(m)
 		if m == previous:
 			map_select.select(map_select.item_count - 1)
-
-
-func _caption(text: String) -> Label:
-	var l := Label.new()
-	l.text = text
-	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	return l
 
 
 static func local_ips() -> Array[String]:

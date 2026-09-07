@@ -51,6 +51,7 @@ var jumps_remaining: int
 var container_offset := Vector3(1.2, -1.1, -2.75)
 var tween: Tween
 var hud: Node
+var _shoot_armed := true # false right after recapturing the mouse, until the button is released
 var _hand_weapon_index := -1
 
 @onready var camera: Camera3D = $Head/Camera
@@ -231,13 +232,17 @@ func _input(event: InputEvent) -> void:
 
 
 func handle_controls(delta: float) -> void:
-	# Mouse capture
-	if Input.is_action_just_pressed("mouse_capture"):
-		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-		mouse_captured = true
+	# Mouse capture: clicking empty space recaptures; clicking a menu button does not, and never fires
+	if Input.is_action_just_pressed("mouse_capture") and not mouse_captured:
+		if get_viewport().gui_get_hovered_control() == null:
+			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+			mouse_captured = true
+			_shoot_armed = false
 	if Input.is_action_just_pressed("mouse_capture_exit"):
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 		mouse_captured = false
+	if not Input.is_action_pressed("shoot"):
+		_shoot_armed = true
 
 	# Movement
 	var input := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
@@ -249,7 +254,7 @@ func handle_controls(delta: float) -> void:
 	if rotation_input:
 		handle_rotation(rotation_input.x, rotation_input.y, true, delta)
 
-	if mouse_captured:
+	if mouse_captured and _shoot_armed:
 		action_shoot()
 		if Input.is_action_just_pressed("fire_mode"):
 			set_fire_mode(1 - fire_mode)

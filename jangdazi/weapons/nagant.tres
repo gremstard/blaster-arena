@@ -7,7 +7,7 @@
 [resource]
 script = ExtResource("3_script")
 model = ExtResource("2_model")
-rotation = Vector3(0, -90, 0)
+rotation = Vector3(0, 90, 0)
 position = Vector3(-0.3, 0.45, 0.2)
 model_scale = 0.024
 view_scale = 4.0

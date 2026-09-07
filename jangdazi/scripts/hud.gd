@@ -107,6 +107,13 @@ func _label(text: String, size: int) -> Label:
 	return l
 
 
+func _panel(margin := 10) -> PanelContainer:
+	var p := PanelContainer.new()
+	p.add_theme_stylebox_override("panel", UITheme.flat(UITheme.PANEL, UITheme.BORDER, 1, 3, margin))
+	p.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return p
+
+
 func _bar(color: Color, max_value: float, height := 18.0) -> ProgressBar:
 	var bar := ProgressBar.new()
 	bar.max_value = max_value
@@ -138,10 +145,12 @@ func _build() -> void:
 	add_child(crosshair)
 
 	# Bottom-left: health
+	var hp_panel := _panel(12)
+	hp_panel.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
+	hp_panel.position = Vector2(24, -132)
+	add_child(hp_panel)
 	var hp_box := VBoxContainer.new()
-	hp_box.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
-	hp_box.position = Vector2(32, -120)
-	add_child(hp_box)
+	hp_panel.add_child(hp_box)
 	health_label = _label("100", 36)
 	health_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	hp_box.add_child(health_label)
@@ -152,17 +161,20 @@ func _build() -> void:
 	hp_box.add_child(shield_bar)
 
 	# Bottom-right: weapon + inventory
+	var wpanel := _panel(12)
+	wpanel.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
+	wpanel.position = Vector2(-396, -120)
+	wpanel.custom_minimum_size = Vector2(372, 0)
+	add_child(wpanel)
 	var wbox := VBoxContainer.new()
-	wbox.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
-	wbox.position = Vector2(-372, -110)
-	wbox.custom_minimum_size = Vector2(340, 0)
-	add_child(wbox)
+	wpanel.add_child(wbox)
 	weapon_label = _label("", 30)
 	weapon_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	wbox.add_child(weapon_label)
-	inventory_label = _label("", 18)
+	inventory_label = _label("", 16)
 	inventory_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	inventory_label.modulate = Color(1, 1, 1, 0.8)
+	inventory_label.modulate = UITheme.TEXT_DIM
+	inventory_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	wbox.add_child(inventory_label)
 
 	effects_box = VBoxContainer.new()
@@ -177,13 +189,16 @@ func _build() -> void:
 	add_child(feed_box)
 
 	# Top-center: phase, timer, alive, capture
+	var top_panel := _panel(8)
+	top_panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
+	top_panel.position = Vector2(-280, 10)
+	top_panel.custom_minimum_size = Vector2(560, 0)
+	add_child(top_panel)
 	var top := VBoxContainer.new()
-	top.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
-	top.position = Vector2(-260, 12)
-	top.custom_minimum_size = Vector2(520, 0)
-	top.alignment = BoxContainer.ALIGNMENT_BEGIN
-	add_child(top)
-	phase_label = _label("", 24)
+	top.add_theme_constant_override("separation", 2)
+	top_panel.add_child(top)
+	phase_label = _label("", 20)
+	phase_label.modulate = UITheme.ACCENT
 	top.add_child(phase_label)
 	timer_label = _label("", 34)
 	top.add_child(timer_label)
@@ -192,19 +207,21 @@ func _build() -> void:
 	capture_box = VBoxContainer.new()
 	capture_box.visible = false
 	top.add_child(capture_box)
-	capture_label = _label("CONTROL ZONE", 18)
-	capture_label.modulate = Color(1, 0.9, 0.3)
+	capture_label = _label("CONTROL ZONE", 16)
+	capture_label.modulate = UITheme.ACCENT
 	capture_box.add_child(capture_label)
-	capture_bar = _bar(Color(1.0, 0.45, 0.3), 1.0, 12)
-	capture_bar.custom_minimum_size = Vector2(520, 12)
+	capture_bar = _bar(Color(1.0, 0.45, 0.3), 1.0, 10)
+	capture_bar.custom_minimum_size = Vector2(540, 10)
 	capture_bar.value = 0
 	capture_box.add_child(capture_bar)
 
-	team_label = _label("", 22)
-	team_label.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
-	team_label.position = Vector2(24, 100)
+	var team_panel := _panel(8)
+	team_panel.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
+	team_panel.position = Vector2(24, 100)
+	add_child(team_panel)
+	team_label = _label("", 20)
 	team_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	add_child(team_label)
+	team_panel.add_child(team_label)
 
 	banner = _label("", 48)
 	banner.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
@@ -258,11 +275,7 @@ func _build() -> void:
 	scoreboard.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 	scoreboard.custom_minimum_size = Vector2(520, 0)
 	scoreboard.position = Vector2(-260, -60)
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0, 0, 0, 0.6)
-	style.set_corner_radius_all(12)
-	style.set_content_margin_all(16)
-	scoreboard.add_theme_stylebox_override("panel", style)
+	scoreboard.add_theme_stylebox_override("panel", UITheme.flat(UITheme.PANEL, UITheme.ACCENT, 1, 3, 16))
 	scoreboard_box = VBoxContainer.new()
 	scoreboard.add_child(scoreboard_box)
 	scoreboard.visible = false
@@ -278,8 +291,9 @@ func _build() -> void:
 	start_button = Button.new()
 	start_button.text = "START MATCH"
 	start_button.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
-	start_button.position = Vector2(-90, -170)
-	start_button.custom_minimum_size = Vector2(180, 44)
+	start_button.position = Vector2(-110, -180)
+	start_button.custom_minimum_size = Vector2(220, 48)
+	start_button.add_theme_font_size_override("font_size", 24)
 	start_button.visible = false
 	start_button.pressed.connect(func(): get_tree().current_scene.start_match())
 	add_child(start_button)
