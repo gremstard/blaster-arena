@@ -3,6 +3,7 @@ extends Node
 # The host (peer 1) is authoritative for everything here.
 
 const PORT := 7777
+var port := PORT # overridable with --port=N for local testing
 const MAX_PLAYERS := 10
 const SETTINGS_PATH := "user://settings.cfg"
 
@@ -98,7 +99,7 @@ func save_settings() -> void:
 
 func host() -> Error:
 	var peer := ENetMultiplayerPeer.new()
-	var err := peer.create_server(PORT, MAX_PLAYERS)
+	var err := peer.create_server(port, MAX_PLAYERS)
 	if err != OK:
 		return err
 	multiplayer.multiplayer_peer = peer
@@ -110,7 +111,7 @@ func host() -> Error:
 
 func join(ip: String) -> Error:
 	var peer := ENetMultiplayerPeer.new()
-	var err := peer.create_client(ip, PORT)
+	var err := peer.create_client(ip, port)
 	if err != OK:
 		return err
 	multiplayer.multiplayer_peer = peer

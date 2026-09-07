@@ -34,6 +34,8 @@ var sync_rotation_y: float
 var sync_pitch: float
 var weapon_index := 0
 var fire_mode := 0
+var sync_speed := 0.0
+var sync_grounded := true
 
 # --- Host-authoritative ---
 var health := BASE_HEALTH
@@ -80,6 +82,9 @@ var _body_material := StandardMaterial3D.new()
 var _model_tint := Color.WHITE
 var _aura_material := StandardMaterial3D.new()
 var _loaded_class := ""
+var animator: OperatorAnimator
+var _hand_default_parent: Node3D
+var _hand_default_transform: Transform3D
 
 
 func peer_id() -> int:
@@ -194,14 +199,36 @@ func _load_class_model(cls: String) -> void:
 			n.visible = false
 	ModelTextures.apply(inst, String(info.get("textures", "")), info.get("map", {}), _model_tint)
 	model_holder.add_child(inst)
-	# Loop the first animation as an idle
-	for ap in inst.find_children("*", "AnimationPlayer"):
-		var list: PackedStringArray = ap.get_animation_list()
-		if list.size() > 0:
-			var anim: Animation = ap.get_animation(list[0])
-			anim.loop_mode = Animation.LOOP_LINEAR
-			ap.play(list[0])
-			break
+	_setup_animation(inst, info)
+
+
+# Retargeted library animations plus the weapon parented to the right hand bone
+func _setup_animation(inst: Node3D, info: Dictionary) -> void:
+	if animator:
+		animator.queue_free()
+		animator = null
+	if _hand_default_parent == null:
+		_hand_default_parent = hand.get_parent()
+		_hand_default_transform = hand.transform
+	if hand.get_parent() != _hand_default_parent:
+		hand.get_parent().remove_child(hand)
+		_hand_default_parent.add_child(hand)
+		hand.transform = _hand_default_transform
+	var a := OperatorAnimator.new()
+	if not a.setup(inst):
+		a.free()
+		return
+	animator = a
+	add_child(animator)
+	var att := animator.right_hand_attachment()
+	if att:
+		hand.get_parent().remove_child(hand)
+		att.add_child(hand)
+		var grip: Array = info.get("grip", [0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+		hand.position = Vector3(grip[0], grip[1], grip[2])
+		hand.rotation_degrees = Vector3(grip[3], grip[4], grip[5])
+	if not is_local():
+		animator.update(0.0, true, dead, true)
 
 
 func has_effect(type: Pickup) -> bool:
@@ -228,9 +255,12 @@ func _process(delta: float) -> void:
 	var t: float = min(1.0, delta * 15.0)
 	position = position.lerp(sync_position, t)
 	rotation.y = lerp_angle(rotation.y, sync_rotation_y, t)
-	hand.rotation.x = lerp_angle(hand.rotation.x, sync_pitch, t)
+	if animator == null:
+		hand.rotation.x = lerp_angle(hand.rotation.x, sync_pitch, t)
 	if weapon_index != _hand_weapon_index:
 		_update_hand_weapon()
+	if animator:
+		animator.update(sync_speed, sync_grounded, dead, weapon_index == 0)
 
 
 func _update_aura() -> void:
@@ -280,6 +310,8 @@ func _physics_process(delta: float) -> void:
 	sync_position = position
 	sync_rotation_y = rotation.y
 	sync_pitch = camera.rotation.x
+	sync_speed = Vector2(velocity.x, velocity.z).length()
+	sync_grounded = is_on_floor()
 
 	if position.y < Game.fall_y:
 		_request_damage(self, 9999, 0)

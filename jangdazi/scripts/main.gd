@@ -444,6 +444,8 @@ func _handle_cmdline() -> void:
 		lobby.name_edit.text = args["name"]
 	if args.has("class") and Game.CLASSES.has(args["class"]):
 		Game.local_class = args["class"]
+	if args.has("port"):
+		Game.port = int(args["port"])
 	if args.has("team"):
 		Game.local_pref = int(args["team"]) # 0 auto, 1 defenders, 2 attackers
 	if args.has("host"):
@@ -483,21 +485,27 @@ func _handle_cmdline() -> void:
 			var host: Player = players_root.get_node_or_null("1")
 			if me and host and not host.dead:
 				me._request_damage(host, 500, me.peer_id()))
-	if args.has("test-look"): # debug: keep facing the nearest other player (clients also teleport next to them)
+	if args.has("test-look"): # debug: keep facing the nearest other player (clients teleport next to them once)
 		var t := Timer.new()
 		t.wait_time = 1.0
 		t.autostart = true
 		add_child(t)
+		var teleported := [false]
 		t.timeout.connect(func():
 			var me: Player = players_root.get_node_or_null(str(multiplayer.get_unique_id()))
 			if me == null:
 				return
 			for other in players_root.get_children():
 				if other is Player and other != me:
-					if not multiplayer.is_server() and me.position.distance_to(other.sync_position) > 4.0:
-						me.position = other.sync_position + Vector3(2.2, 0.2, 2.2)
+					if not multiplayer.is_server() and not teleported[0]:
+						teleported[0] = true
+						me.position = other.sync_position + Vector3(3.0, 0.2, 3.0)
 					me.face_toward(other.sync_position + Vector3(0, 1.2, 0))
 					break)
+	if args.has("test-walk"): # debug: strafe left for 4 s starting at --test-walk=SECONDS (default 4)
+		var start := float(args["test-walk"]) if args["test-walk"] != "" else 4.0
+		get_tree().create_timer(start).timeout.connect(func(): Input.action_press("move_left"))
+		get_tree().create_timer(start + 4.0).timeout.connect(func(): Input.action_release("move_left"))
 	if args.has("dump-viewmodel"): # debug: print the first-person weapon subtree
 		get_tree().create_timer(5.0).timeout.connect(func():
 			var me: Player = players_root.get_node_or_null(str(multiplayer.get_unique_id()))
